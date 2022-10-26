@@ -136,11 +136,11 @@ class PortMappings:
             return
         if port is None or int(port) <= 0:
             raise Exception(f"Unable to add mapping for invalid port: {port}")
-        if self.contains(port):
+        if self.contains(port, protocol):
             return
         bisected_host_port = None
         for from_range, to_range in dict(self.mappings).items():
-            if not self.in_expanded_range(port, from_range):
+            if not self.in_expanded_range(port, from_range, protocol=protocol):
                 continue
             if not self.in_expanded_range(mapped, to_range):
                 continue
@@ -148,20 +148,20 @@ class PortMappings:
             to_range_len = to_range[1] - to_range[0]
             is_uniform = from_range_len == to_range_len
             if is_uniform:
-                self.expand_range(port, from_range, remap=True)
-                self.expand_range(mapped, to_range)
+                self.expand_range(port, protocol, from_range, remap=True)
+                self.expand_range(mapped, protocol, to_range)
             else:
-                if not self.in_range(mapped, to_range):
+                if not self.in_range(mapped, protocol, to_range):
                     continue
                 # extending a 1 to 1 mapping to be many to 1
                 elif from_range_len == 1:
-                    self.expand_range(port, from_range, remap=True)
+                    self.expand_range(port, protocol, from_range, remap=True)
                 # splitting a uniform mapping
                 else:
                     bisected_port_index = mapped - to_range[0]
                     bisected_host_port = from_range[0] + bisected_port_index
-                    self.bisect_range(mapped, to_range)
-                    self.bisect_range(bisected_host_port, from_range, remap=True)
+                    self.bisect_range(mapped, protocol, to_range)
+                    self.bisect_range(bisected_host_port, protocol, from_range, remap=True)
                     break
             return
         protocol = str(protocol or "tcp").lower()
@@ -222,22 +222,26 @@ class PortMappings:
         items = [item for k, v in self.mappings.items() for item in entry(k, v)]
         return dict(items)
 
-    def contains(self, port: int) -> bool:
-        for from_range, to_range in self.mappings.items():
-            if self.in_range(port, from_range):
+    def contains(self, port: int, protocol: str) -> bool:
+        for port_range, _ in self.mappings.items():
+            if self.in_range(port, protocol, port_range):
                 return True
 
-    def in_range(self, port: int, range: PortRange) -> bool:
-        return port >= range[0] and port <= range[1]
+    def in_range(self, port: int, protocol: str, range: PortRange) -> bool:
+        return port >= range[0] and port <= range[1] and range[2] == protocol
 
-    def in_expanded_range(self, port: int, range: PortRange):
-        return port >= range[0] - 1 and port <= range[1] + 1
+    def in_expanded_range(self, port: int, range: PortRange, protocol: Optional[str] = None):
+        return (
+            port >= range[0] - 1
+            and port <= range[1] + 1
+            and (protocol == range[2] if protocol is not None else True)
+        )
 
-    def expand_range(self, port: int, range: PortRange, remap: bool = False):
+    def expand_range(self, port: int, protocol: str, range: PortRange, remap: bool = False):
         """
         Expand the given port range by the given port. If remap==True, put the updated range into self.mappings
         """
-        if self.in_range(port, range):
+        if self.in_range(port, protocol, range):
             return
         new_range = list(range) if remap else range
         if port == range[0] - 1:
@@ -249,13 +253,13 @@ class PortMappings:
         if remap:
             self._remap_range(range, new_range)
 
-    def bisect_range(self, port: int, range: PortRange, remap: bool = False):
+    def bisect_range(self, port: int, protocol: str, range: PortRange, remap: bool = False):
         """
         Bisect a port range, at the provided port. This is needed in some cases when adding a
         non-uniform host to port mapping adjacent to an existing port range.
         If remap==True, put the updated range into self.mappings
         """
-        if not self.in_range(port, range):
+        if not self.in_range(port, protocol, range):
             return
         new_range = list(range) if remap else range
         if port == range[0]:

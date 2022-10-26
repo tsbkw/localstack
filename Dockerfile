@@ -11,27 +11,27 @@ ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk-${TARGETARCH}
 
 # create a custom, minimized JRE via jlink
 RUN jlink --add-modules \
-# include required modules
-java.base,java.desktop,java.instrument,java.management,java.naming,java.scripting,java.sql,java.xml,jdk.compiler,\
-# jdk.unsupported contains sun.misc.Unsafe which is required by certain dependencies
-jdk.unsupported,\
-# add additional cipher suites
-jdk.crypto.cryptoki,\
-# add ability to open ZIP/JAR files
-jdk.zipfs,\
-# OpenSearch needs some jdk modules
-jdk.httpserver,jdk.management,\
-# MQ Broker requires management agent
-jdk.management.agent,\
-# Elasticsearch 7+ crashes without Thai Segmentation support
-jdk.localedata --include-locales en,th \
+    # include required modules
+    java.base,java.desktop,java.instrument,java.management,java.naming,java.scripting,java.sql,java.xml,jdk.compiler,\
+    # jdk.unsupported contains sun.misc.Unsafe which is required by certain dependencies
+    jdk.unsupported,\
+    # add additional cipher suites
+    jdk.crypto.cryptoki,\
+    # add ability to open ZIP/JAR files
+    jdk.zipfs,\
+    # OpenSearch needs some jdk modules
+    jdk.httpserver,jdk.management,\
+    # MQ Broker requires management agent
+    jdk.management.agent,\
+    # Elasticsearch 7+ crashes without Thai Segmentation support
+    jdk.localedata --include-locales en,th \
     --compress 2 --strip-debug --no-header-files --no-man-pages --output /usr/lib/jvm/java-11 && \
-  cp ${JAVA_HOME}/bin/javac /usr/lib/jvm/java-11/bin/javac && \
-  cp -r ${JAVA_HOME}/include /usr/lib/jvm/java-11/include && \
-  mv /usr/lib/jvm/java-11/lib/modules /usr/lib/jvm/java-11/lib/modules.bk; \
-  cp -r ${JAVA_HOME}/lib/* /usr/lib/jvm/java-11/lib/; \
-  mv /usr/lib/jvm/java-11/lib/modules.bk /usr/lib/jvm/java-11/lib/modules; \
-  rm -rf /usr/bin/java ${JAVA_HOME} && ln -s /usr/lib/jvm/java-11/bin/java /usr/bin/java
+    cp ${JAVA_HOME}/bin/javac /usr/lib/jvm/java-11/bin/javac && \
+    cp -r ${JAVA_HOME}/include /usr/lib/jvm/java-11/include && \
+    mv /usr/lib/jvm/java-11/lib/modules /usr/lib/jvm/java-11/lib/modules.bk; \
+    cp -r ${JAVA_HOME}/lib/* /usr/lib/jvm/java-11/lib/; \
+    mv /usr/lib/jvm/java-11/lib/modules.bk /usr/lib/jvm/java-11/lib/modules; \
+    rm -rf /usr/bin/java ${JAVA_HOME} && ln -s /usr/lib/jvm/java-11/bin/java /usr/bin/java
 
 
 
@@ -41,28 +41,28 @@ ARG TARGETARCH
 
 # Install runtime OS package dependencies
 RUN apt-get update && \
-        # Install dependencies to add additional repos
-        apt-get install -y --no-install-recommends ca-certificates curl && \
-        # Setup Node 18 Repo
-        curl -sL https://deb.nodesource.com/setup_18.x | bash - && \
-        # Install Packages
-        apt-get update && \
-        apt-get install -y --no-install-recommends \
-            # Runtime packages (groff-base is necessary for AWS CLI help)
-            git make openssl tar pixz zip unzip groff-base iputils-ping nss-passwords \
-            # Postgres
-            postgresql postgresql-client postgresql-plpython3 \
-            # NodeJS
-            nodejs && \
-        apt-get clean && rm -rf /var/lib/apt/lists/*
+    # Install dependencies to add additional repos
+    apt-get install -y --no-install-recommends ca-certificates curl && \
+    # Setup Node 18 Repo
+    curl -sL https://deb.nodesource.com/setup_18.x | bash - && \
+    # Install Packages
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+    # Runtime packages (groff-base is necessary for AWS CLI help)
+    git make openssl tar pixz zip unzip groff-base iputils-ping nss-passwords \
+    # Postgres
+    postgresql postgresql-client postgresql-plpython3 \
+    # NodeJS
+    nodejs && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
 SHELL [ "/bin/bash", "-c" ]
 
 # Install Java 11
 ENV LANG C.UTF-8
 RUN { \
-        echo '#!/bin/sh'; echo 'set -e'; echo; \
-        echo 'dirname "$(dirname "$(readlink -f "$(which javac || which java)")")"'; \
+    echo '#!/bin/sh'; echo 'set -e'; echo; \
+    echo 'dirname "$(dirname "$(readlink -f "$(which javac || which java)")")"'; \
     } > /usr/local/bin/docker-java-home \
     && chmod +x /usr/local/bin/docker-java-home
 COPY --from=java-builder /usr/lib/jvm/java-11 /usr/lib/jvm/java-11
@@ -79,11 +79,11 @@ ARG USER_HOME_DIR="/root"
 ARG MAVEN_SHA=26ad91d751b3a9a53087aefa743f4e16a17741d3915b219cf74112bf87a438c5
 ARG MAVEN_BASE_URL=https://apache.osuosl.org/maven/maven-3/${MAVEN_VERSION}/binaries
 RUN mkdir -p /usr/share/maven /usr/share/maven/ref \
-  && curl -fsSL -o /tmp/apache-maven.tar.gz ${MAVEN_BASE_URL}/apache-maven-$MAVEN_VERSION-bin.tar.gz \
-  && echo "${MAVEN_SHA}  /tmp/apache-maven.tar.gz" | sha256sum -c - \
-  && tar -xzf /tmp/apache-maven.tar.gz -C /usr/share/maven --strip-components=1 \
-  && rm -f /tmp/apache-maven.tar.gz \
-  && ln -s /usr/share/maven/bin/mvn /usr/bin/mvn
+    && curl -fsSL -o /tmp/apache-maven.tar.gz ${MAVEN_BASE_URL}/apache-maven-$MAVEN_VERSION-bin.tar.gz \
+    && echo "${MAVEN_SHA}  /tmp/apache-maven.tar.gz" | sha256sum -c - \
+    && tar -xzf /tmp/apache-maven.tar.gz -C /usr/share/maven --strip-components=1 \
+    && rm -f /tmp/apache-maven.tar.gz \
+    && ln -s /usr/share/maven/bin/mvn /usr/bin/mvn
 ENV MAVEN_HOME /usr/share/maven
 ENV MAVEN_CONFIG "$USER_HOME_DIR/.m2"
 ADD https://raw.githubusercontent.com/carlossg/docker-maven/9d82eaf48ee8b14ac15a36c431ba28b735e99c92/openjdk-11/settings-docker.xml /usr/share/maven/ref/
@@ -133,19 +133,19 @@ ARG TARGETARCH
 
 # Install build dependencies to base
 RUN apt-get update && apt-get install -y autoconf automake cmake libsasl2-dev \
-        g++ gcc libffi-dev libkrb5-dev libssl-dev \
-        postgresql-server-dev-11 libpq-dev
+    g++ gcc libffi-dev libkrb5-dev libssl-dev \
+    postgresql-server-dev-11 libpq-dev
 
 # Install timescaledb into postgresql
 RUN (cd /tmp && git clone https://github.com/timescale/timescaledb.git) && \
     (cd /tmp/timescaledb && git checkout 2.3.1 && ./bootstrap -DREGRESS_CHECKS=OFF && \
-      cd build && make && make install)
+    cd build && make && make install)
 
 # init environment and cache some dependencies
 ARG DYNAMODB_ZIP_URL=https://s3-us-west-2.amazonaws.com/dynamodb-local/dynamodb_local_latest.zip
 RUN mkdir -p /usr/lib/localstack/dynamodb && \
-      curl -L -o /tmp/localstack.ddb.zip ${DYNAMODB_ZIP_URL} && \
-      (cd /usr/lib/localstack/dynamodb && unzip -q /tmp/localstack.ddb.zip && rm /tmp/localstack.ddb.zip)
+    curl -L -o /tmp/localstack.ddb.zip ${DYNAMODB_ZIP_URL} && \
+    (cd /usr/lib/localstack/dynamodb && unzip -q /tmp/localstack.ddb.zip && rm /tmp/localstack.ddb.zip)
 
 # upgrade python build tools
 RUN (virtualenv .venv && . .venv/bin/activate && pip3 install --upgrade pip wheel setuptools)
@@ -183,27 +183,27 @@ ENV ES_BASE_DIR=/usr/lib/localstack/elasticsearch/Elasticsearch_7.10
 ENV ES_JAVA_HOME /usr/lib/jvm/java-11
 RUN TARGETARCH_SYNONYM=$([[ "$TARGETARCH" == "amd64" ]] && echo "x86_64" || echo "aarch64"); \
     curl -L -o /tmp/localstack.es.tar.gz \
-        https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.10.0-linux-${TARGETARCH_SYNONYM}.tar.gz && \
+    https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.10.0-linux-${TARGETARCH_SYNONYM}.tar.gz && \
     (cd /tmp && tar -xf localstack.es.tar.gz && \
-        mkdir -p $ES_BASE_DIR && mv elasticsearch*/* $ES_BASE_DIR && rm /tmp/localstack.es.tar.gz) && \
+    mkdir -p $ES_BASE_DIR && mv elasticsearch*/* $ES_BASE_DIR && rm /tmp/localstack.es.tar.gz) && \
     (cd $ES_BASE_DIR && \
-        bin/elasticsearch-plugin install analysis-icu && \
-        bin/elasticsearch-plugin install ingest-attachment --batch && \
-        bin/elasticsearch-plugin install analysis-kuromoji && \
-        bin/elasticsearch-plugin install mapper-murmur3 && \
-        bin/elasticsearch-plugin install mapper-size && \
-        bin/elasticsearch-plugin install analysis-phonetic && \
-        bin/elasticsearch-plugin install analysis-smartcn && \
-        bin/elasticsearch-plugin install analysis-stempel && \
-        bin/elasticsearch-plugin install analysis-ukrainian) && \
+    bin/elasticsearch-plugin install analysis-icu && \
+    bin/elasticsearch-plugin install ingest-attachment --batch && \
+    bin/elasticsearch-plugin install analysis-kuromoji && \
+    bin/elasticsearch-plugin install mapper-murmur3 && \
+    bin/elasticsearch-plugin install mapper-size && \
+    bin/elasticsearch-plugin install analysis-phonetic && \
+    bin/elasticsearch-plugin install analysis-smartcn && \
+    bin/elasticsearch-plugin install analysis-stempel && \
+    bin/elasticsearch-plugin install analysis-ukrainian) && \
     ( rm -rf $ES_BASE_DIR/jdk/ ) && \
     ( mkdir -p $ES_BASE_DIR/data && \
-        mkdir -p $ES_BASE_DIR/logs && \
-        chmod -R 777 $ES_BASE_DIR/config && \
-        chmod -R 777 $ES_BASE_DIR/data && \
-        chmod -R 777 $ES_BASE_DIR/logs) && \
+    mkdir -p $ES_BASE_DIR/logs && \
+    chmod -R 777 $ES_BASE_DIR/config && \
+    chmod -R 777 $ES_BASE_DIR/data && \
+    chmod -R 777 $ES_BASE_DIR/logs) && \
     ( rm -rf $ES_BASE_DIR/modules/x-pack-ml/platform && \
-        rm -rf $ES_BASE_DIR/modules/ingest-geoip)
+    rm -rf $ES_BASE_DIR/modules/ingest-geoip)
 
 
 
@@ -247,8 +247,8 @@ RUN make init
 # If this is a pre-release build, also include dev releases of these packages.
 ARG LOCALSTACK_PRE_RELEASE=1
 RUN (PIP_ARGS=$([[ "$LOCALSTACK_PRE_RELEASE" == "1" ]] && echo "--pre" || true); \
-      virtualenv .venv && . .venv/bin/activate && \
-      pip3 install --upgrade ${PIP_ARGS} localstack-ext[runtime])
+    virtualenv .venv && . .venv/bin/activate && \
+    pip3 install --upgrade ${PIP_ARGS} localstack-ext[runtime])
 RUN make entrypoints
 
 # Add the build date and git hash at last (changes everytime)
@@ -262,8 +262,8 @@ ENV LOCALSTACK_BUILD_VERSION=${LOCALSTACK_BUILD_VERSION}
 # clean up some libs (e.g., Maven should be no longer required after "make init" has completed)
 RUN rm -rf /usr/share/maven
 
-# expose edge service, external service ports, and debugpy
-EXPOSE 4566 4510-4559 5678
+# expose dns, edge service, external service ports, and debugpy
+EXPOSE 53 4566 4510-4559 5678
 
 HEALTHCHECK --interval=10s --start-period=15s --retries=5 --timeout=5s CMD ./bin/localstack status services --format=json
 

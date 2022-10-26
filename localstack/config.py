@@ -372,6 +372,9 @@ if TMP_FOLDER.startswith("/var/folders/") and os.path.exists("/private%s" % TMP_
 # temporary folder of the host (required when running in Docker). Fall back to local tmp folder if not set
 HOST_TMP_FOLDER = os.environ.get("HOST_TMP_FOLDER", TMP_FOLDER)
 
+# Port number of the host (required when running in Docker) for binding DNS service
+HOST_DNS_PORT_BINDING = int(os.environ.get("HOST_DNS_PORT_BINDING", "53"))
+
 # whether to use the old directory structure and mounting config
 LEGACY_DIRECTORIES = is_env_true("LEGACY_DIRECTORIES")
 
@@ -740,6 +743,7 @@ CONFIG_ENV_VARS = [
     "HOSTNAME",
     "HOSTNAME_EXTERNAL",
     "HOSTNAME_FROM_LAMBDA",
+    "HOST_DNS_PORT_BINDING",
     "KINESIS_ERROR_PROBABILITY",
     "KINESIS_INITIALIZE_STREAMS",
     "KINESIS_MOCK_PERSIST_INTERVAL",

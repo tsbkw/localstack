@@ -561,6 +561,11 @@ def configure_container(container: LocalstackContainer):
     if config.DEVELOP:
         container.ports.add(config.DEVELOP_PORT)
 
+    # setup DNS port mapping, DNS use both tcp and udp
+
+    container.ports.add(config.HOST_DNS_PORT_BINDING, 53)
+    container.ports.add(config.HOST_DNS_PORT_BINDING, 53, "udp")
+
     # environment variables
     # pass through environment variables defined in config
     for env_var in config.CONFIG_ENV_VARS:
